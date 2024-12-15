@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* iOS System Font */
+@layer base {
+  html {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* iOS System Colors */
+@layer base {
+  :root {
+    --system-blue: #007aff;
+    --system-green: #34c759;
+    --system-indigo: #5856d6;
+    --system-orange: #ff9500;
+    --system-pink: #ff2d55;
+    --system-purple: #af52de;
+    --system-red: #ff3b30;
+    --system-teal: #5ac8fa;
+    --system-yellow: #ffcc00;
+
+    --system-gray: #8e8e93;
+    --system-gray2: #aeaeb2;
+    --system-gray3: #c7c7cc;
+    --system-gray4: #d1d1d6;
+    --system-gray5: #e5e5ea;
+    --system-gray6: #f2f2f7;
+
+    /* Light Mode Colors */
+    --background: var(--system-gray6);
+    --foreground: #000000;
+
+    --card: #ffffff;
+    --card-foreground: #000000;
+
+    --popover: #ffffff;
+    --popover-foreground: #000000;
+
+    --primary: var(--system-blue);
+    --primary-foreground: #ffffff;
+
+    --secondary: var(--system-gray6);
+    --secondary-foreground: var(--system-blue);
+
+    --muted: var(--system-gray6);
+    --muted-foreground: var(--system-gray);
+
+    --accent: var(--system-gray6);
+    --accent-foreground: #000000;
+
+    --destructive: var(--system-red);
+    --destructive-foreground: #ffffff;
+
+    --border: var(--system-gray4);
+    --input: var(--system-gray4);
+    --ring: var(--system-blue);
+
+    --radius: 0.5rem;
+  }
+
+  /* Dark Mode Colors */
+  .dark {
+    --background: #000000;
+    --foreground: #ffffff;
+
+    --card: #1c1c1e;
+    --card-foreground: #ffffff;
+
+    --popover: #1c1c1e;
+    --popover-foreground: #ffffff;
+
+    --primary: var(--system-blue);
+    --primary-foreground: #ffffff;
+
+    --secondary: #2c2c2e;
+    --secondary-foreground: #ffffff;
+
+    --muted: #2c2c2e;
+    --muted-foreground: var(--system-gray);
+
+    --accent: #2c2c2e;
+    --accent-foreground: #ffffff;
+
+    --destructive: var(--system-red);
+    --destructive-foreground: #ffffff;
+
+    --border: #2c2c2e;
+    --input: #2c2c2e;
+    --ring: var(--system-blue);
+  }
+}
+
+/* iOS-specific utilities */
+@layer utilities {
+  .ios-safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .ios-safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .ios-blur {
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+}
+
+/* iOS-style scrolling */
+@layer base {
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Hide scrollbars */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+}
+
+/* iOS-style tap highlight */
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* iOS-style text selection */
+@layer base {
+  ::selection {
+    background: var(--system-blue);
+    color: #ffffff;
+  }
+}
