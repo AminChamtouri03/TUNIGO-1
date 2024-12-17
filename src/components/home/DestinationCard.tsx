@@ -5,6 +5,7 @@ interface DestinationCardProps {
   image?: string;
   title?: string;
   rating?: number;
+  distance?: string;
   isFavorite?: boolean;
   onFavoriteClick?: () => void;
   onClick?: () => void;
@@ -14,6 +15,7 @@ const DestinationCard = ({
   image = "https://dummyimage.com/300x200/1e40af/ffffff&text=Destination",
   title = "Carthage Ruins",
   rating = 4.6,
+  distance,
   isFavorite = false,
   onFavoriteClick = () => {},
   onClick = () => {},
@@ -38,12 +40,17 @@ const DestinationCard = ({
         />
       </Button>
       <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
-        <div className="flex justify-between items-center text-white">
-          <span className="font-medium">{title}</span>
-          <div className="flex items-center gap-1">
-            <span className="text-sm">★</span>
-            <span className="text-sm">{rating}</span>
+        <div className="flex flex-col text-white gap-1">
+          <div className="flex justify-between items-center">
+            <span className="font-medium">{title}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-sm">★</span>
+              <span className="text-sm">{rating}</span>
+            </div>
           </div>
+          {distance && (
+            <span className="text-sm text-white/80">{distance}</span>
+          )}
         </div>
       </div>
     </div>

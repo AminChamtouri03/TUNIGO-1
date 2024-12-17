@@ -16,6 +16,7 @@ interface Destination {
   title: string;
   rating: number;
   image: string;
+  distance?: number;
   wikipedia?: {
     lang?: string;
     title: string;
@@ -56,12 +57,14 @@ const PopularDestinations = ({
     loadThumbnails();
   }, [propDestinations]);
 
+  const formatDistance = (distance?: number) => {
+    if (!distance) return "";
+    if (distance < 1) return `${Math.round(distance * 1000)}m away`;
+    return `${distance.toFixed(1)}km away`;
+  };
+
   return (
     <div className="w-full bg-white py-4">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4 px-4">
-        Popular Destinations
-      </h2>
-
       <div className="flex overflow-x-auto gap-4 px-4 pb-4 snap-x snap-mandatory hide-scrollbar">
         {propDestinations.map((destination) => (
           <div key={destination.id} className="flex-none w-[250px] snap-start">
@@ -73,6 +76,7 @@ const PopularDestinations = ({
               }
               title={destination.title}
               rating={destination.rating}
+              distance={formatDistance(destination.distance)}
               isFavorite={isFavorite(destination.id)}
               onClick={() => navigate(`/destination/${destination.id}`)}
               onFavoriteClick={() => toggleFavorite(destination.id)}
