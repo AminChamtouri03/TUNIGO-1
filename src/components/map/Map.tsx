@@ -49,17 +49,17 @@ const nearbyPlaces: NearbyPlace[] = [
     },
   },
   {
-    id: "cathedral-st-vincent",
-    title: "Cathedral of St. Vincent",
+    id: "tourbet-el-bey",
+    title: "Tourbet El Bey",
     distance: 1.2,
     coordinates: {
-      lat: 36.8002,
-      lng: 10.1716,
+      lat: 36.7992,
+      lng: 10.1706,
     },
     transport: {
-      type: "Bus",
-      duration: "5 mins",
-      cost: "1 TND",
+      type: "Walk",
+      duration: "12 mins",
+      cost: "Free",
     },
   },
 ];
@@ -68,15 +68,11 @@ const Map = () => {
   const navigate = useNavigate();
   const [selectedPlace, setSelectedPlace] = useState<NearbyPlace | null>(null);
 
-  // Center coordinates (Centre Ville, Tunis)
-  const center = { lat: 36.7992, lng: 10.1706 };
-
-  // Create marker parameters for OpenStreetMap
-  const markers = nearbyPlaces
-    .map(
-      (place) => `&marker=${place.coordinates.lat}%2C${place.coordinates.lng}`,
-    )
-    .join("");
+  const handleOpenInGoogleMaps = (place: NearbyPlace) => {
+    const query = encodeURIComponent(`${place.title}, Tunis, Tunisia`);
+    const url = `https://www.google.com/maps/search/?api=1&query=${query}&center=${place.coordinates.lat},${place.coordinates.lng}`;
+    window.open(url, "_blank");
+  };
 
   return (
     <div className="h-screen bg-white relative">
@@ -97,15 +93,11 @@ const Map = () => {
       </div>
 
       {/* Map */}
-      <div className="w-full h-[60vh] bg-gray-100">
-        <iframe
-          src={`https://www.openstreetmap.org/export/embed.html?bbox=${center.lng - 0.005}%2C${center.lat - 0.005}%2C${center.lng + 0.005}%2C${center.lat + 0.005}&layer=mapnik&marker=${center.lat}%2C${center.lng}${markers}`}
-          width="100%"
-          height="100%"
-          style={{ border: 0 }}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
+      <div className="w-full h-[60vh] bg-gray-100 flex items-center justify-center">
+        <div className="text-gray-400 flex flex-col items-center gap-2">
+          <MapPin className="h-8 w-8" />
+          <span>Map View</span>
+        </div>
       </div>
 
       {/* Location Legend */}
@@ -136,33 +128,46 @@ const Map = () => {
           {nearbyPlaces.map((place) => (
             <Card
               key={place.id}
-              className={`p-3 cursor-pointer transition-colors ${selectedPlace?.id === place.id ? "bg-gray-50 ring-1 ring-[#00A9FF]" : "hover:bg-gray-50"}`}
-              onClick={() => setSelectedPlace(place)}
+              className={`p-3 transition-colors ${selectedPlace?.id === place.id ? "bg-gray-50 ring-1 ring-[#00A9FF]" : "hover:bg-gray-50"}`}
             >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium">{place.title}</h3>
-                  <p className="text-sm text-gray-600">
-                    {place.distance} km away
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-1 text-[#00A9FF] text-sm">
-                    <Navigation className="h-3 w-3" />
-                    <p>{place.transport.type}</p>
+              <div
+                className="cursor-pointer"
+                onClick={() => setSelectedPlace(place)}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium">{place.title}</h3>
+                    <p className="text-sm text-gray-600">
+                      {place.distance} km away
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    {place.transport.duration}
-                  </p>
+                  <div className="text-right">
+                    <div className="flex items-center gap-1 text-[#00A9FF] text-sm">
+                      <Navigation className="h-3 w-3" />
+                      <p>{place.transport.type}</p>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      {place.transport.duration}
+                    </p>
+                  </div>
                 </div>
               </div>
               {selectedPlace?.id === place.id && (
-                <div className="mt-2 pt-2 border-t text-sm text-gray-600">
-                  <p>Best transport option:</p>
-                  <p className="text-[#00A9FF]">
-                    {place.transport.type} • {place.transport.duration} •{" "}
-                    {place.transport.cost}
-                  </p>
+                <div className="mt-2 pt-2 border-t space-y-2">
+                  <div className="text-sm text-gray-600">
+                    <p>Best transport option:</p>
+                    <p className="text-[#00A9FF]">
+                      {place.transport.type} • {place.transport.duration} •{" "}
+                      {place.transport.cost}
+                    </p>
+                  </div>
+                  <Button
+                    className="w-full bg-[#00A9FF] hover:bg-[#00A9FF]/90 text-white"
+                    onClick={() => handleOpenInGoogleMaps(place)}
+                  >
+                    <Navigation className="mr-2 h-4 w-4" />
+                    Open in Google Maps
+                  </Button>
                 </div>
               )}
             </Card>

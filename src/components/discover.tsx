@@ -3,9 +3,12 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import DestinationList from "./discover/DestinationList";
 import { destinationsList } from "@/data/destinations";
+import { useLocation } from "react-router-dom";
 
 const Discover = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const location = useLocation();
+  const initialSearch = location.state?.searchQuery || "";
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [filteredDestinations, setFilteredDestinations] =
     useState(destinationsList);
 

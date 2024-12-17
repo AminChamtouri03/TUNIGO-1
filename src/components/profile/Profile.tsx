@@ -6,12 +6,14 @@ import {
   ArrowLeft,
   Camera,
   Trash2,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DestinationList from "../discover/DestinationList";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { destinations } from "@/data/destinations";
 import { useState, useRef } from "react";
 
@@ -38,6 +40,7 @@ const Profile = ({
   },
 }: ProfileProps) => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const { favorites } = useFavorites();
   const favoriteDestinations = favorites
     .map((id) => destinations[id])
@@ -66,6 +69,11 @@ const Profile = ({
     }
   };
 
+  const handleDisconnect = () => {
+    logout();
+    navigate("/login");
+  };
+
   const isDefaultImage = profileImage === DEFAULT_PROFILE_IMAGE;
 
   return (
@@ -82,7 +90,14 @@ const Profile = ({
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <span className="font-medium">Profile</span>
-          <div className="w-8" /> {/* Spacer for alignment */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+            onClick={handleDisconnect}
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
@@ -155,6 +170,16 @@ const Profile = ({
                 <span className="text-gray-600">{user.location}</span>
               </div>
             </div>
+
+            {/* Disconnect Button */}
+            <Button
+              variant="destructive"
+              className="w-full mt-8"
+              onClick={handleDisconnect}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Disconnect
+            </Button>
           </TabsContent>
 
           <TabsContent value="favorites" className="mt-6 px-4">

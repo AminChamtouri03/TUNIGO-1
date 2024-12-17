@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Bell, Map } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { MapPin, Map, Thermometer } from "lucide-react";
+import SearchBar from "./home/SearchBar";
 import CategoryShortcuts from "./home/CategoryShortcuts";
 import PopularDestinations from "./home/PopularDestinations";
 import { getWikipediaInfo } from "@/lib/wikipedia";
@@ -12,6 +12,7 @@ const Home = () => {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState<CategoryType>("Hotel");
   const [heroImage, setHeroImage] = useState<string>("");
+  const [temperature, setTemperature] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchHeroImage = async () => {
@@ -23,15 +24,25 @@ const Home = () => {
       }
     };
 
+    const fetchWeather = async () => {
+      try {
+        const response = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?q=Tunis,TN&units=metric&appid=YOUR_API_KEY`,
+        );
+        const data = await response.json();
+        setTemperature(Math.round(data.main.temp));
+      } catch (error) {
+        console.error("Error fetching weather:", error);
+        setTemperature(25); // Fallback temperature
+      }
+    };
+
     fetchHeroImage();
+    fetchWeather();
   }, []);
 
   const handleSearch = (query: string) => {
-    navigate("/discover");
-  };
-
-  const handleExplore = () => {
-    navigate("/discover");
+    navigate("/discover", { state: { searchQuery: query } });
   };
 
   const handleCategoryClick = (category: CategoryType) => {
@@ -47,11 +58,9 @@ const Home = () => {
           <MapPin className="h-5 w-5 text-[#00A9FF]" />
           <span className="text-sm">Centre Ville, Tunis</span>
         </div>
-        <div className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 bg-[#00A9FF] text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
-            2
-          </span>
+        <div className="flex items-center gap-1 text-gray-600">
+          <Thermometer className="h-5 w-5" />
+          <span className="text-sm font-medium">{temperature}°C</span>
         </div>
       </div>
 
@@ -66,26 +75,11 @@ const Home = () => {
           className="w-full h-[200px] object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
-        <div className="absolute bottom-0 left-0 right-0 text-white text-center pb-4">
-          <h1 className="text-2xl font-bold">Where do you want to go?</h1>
-        </div>
       </div>
 
       {/* Search Bar */}
-      <div className="px-4 py-4">
-        <div className="w-full bg-white rounded-lg shadow-sm flex items-center gap-2 border p-2">
-          <Input
-            type="text"
-            placeholder="Explore now"
-            className="flex-1 border-none bg-transparent focus-visible:ring-0"
-          />
-          <button
-            onClick={handleExplore}
-            className="bg-[#00A9FF] text-white px-6 py-2 rounded-lg"
-          >
-            Explore
-          </button>
-        </div>
+      <div className="px-4 -mt-6 relative z-10">
+        <SearchBar onSearch={handleSearch} />
       </div>
 
       {/* Category Icons */}

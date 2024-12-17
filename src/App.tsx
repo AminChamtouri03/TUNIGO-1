@@ -1,7 +1,14 @@
 import { Suspense } from "react";
-import { useRoutes, Routes, Route } from "react-router-dom";
+import {
+  useRoutes,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
 import { UserInteractionsProvider } from "./contexts/UserInteractionsContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Home from "./components/home";
 import Discover from "./components/discover";
 import Hotels from "./components/hotels";
@@ -10,6 +17,9 @@ import Shopping from "./components/shopping";
 import Transport from "./components/transport";
 import Profile from "./components/profile/Profile";
 import Map from "./components/map/Map";
+import Login from "./components/auth/Login";
+import SignUp from "./components/auth/SignUp";
+import ResetPassword from "./components/auth/ResetPassword";
 import DestinationDetails from "./components/destination/DestinationDetails";
 import HotelDetails from "./components/hotels/HotelDetails";
 import FoodDetails from "./components/food/FoodDetails";
@@ -18,38 +28,148 @@ import TransportDetails from "./components/transport/TransportDetails";
 import BottomNavigation from "./components/home/BottomNavigation";
 import routes from "tempo-routes";
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
+  const location = useLocation();
+  const isAuthPage =
+    location.pathname === "/login" ||
+    location.pathname === "/signup" ||
+    location.pathname === "/reset-password";
+
   return (
-    <FavoritesProvider>
-      <UserInteractionsProvider>
-        <div className="flex justify-center min-h-screen bg-gray-100">
-          <div className="w-full max-w-[390px] bg-white relative shadow-xl">
-            <Suspense fallback={<p>Loading...</p>}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/food" element={<Food />} />
-                <Route path="/discover" element={<Discover />} />
-                <Route path="/hotels" element={<Hotels />} />
-                <Route path="/shopping" element={<Shopping />} />
-                <Route path="/transport" element={<Transport />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/map" element={<Map />} />
-                <Route
-                  path="/destination/:id"
-                  element={<DestinationDetails />}
-                />
-                <Route path="/hotel/:id" element={<HotelDetails />} />
-                <Route path="/food/:id" element={<FoodDetails />} />
-                <Route path="/shopping/:id" element={<ShoppingDetails />} />
-                <Route path="/transport/:id" element={<TransportDetails />} />
-              </Routes>
-            </Suspense>
-            {import.meta.env.VITE_TEMPO === "true" && useRoutes(routes)}
-            <BottomNavigation />
+    <AuthProvider>
+      <FavoritesProvider>
+        <UserInteractionsProvider>
+          <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+            <div className="w-full h-screen max-w-[390px] bg-white relative shadow-xl overflow-auto">
+              <Suspense fallback={<p>Loading...</p>}>
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+
+                  <Route
+                    path="/"
+                    element={
+                      <ProtectedRoute>
+                        <Home />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/food"
+                    element={
+                      <ProtectedRoute>
+                        <Food />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/discover"
+                    element={
+                      <ProtectedRoute>
+                        <Discover />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/hotels"
+                    element={
+                      <ProtectedRoute>
+                        <Hotels />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/shopping"
+                    element={
+                      <ProtectedRoute>
+                        <Shopping />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/transport"
+                    element={
+                      <ProtectedRoute>
+                        <Transport />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/map"
+                    element={
+                      <ProtectedRoute>
+                        <Map />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/destination/:id"
+                    element={
+                      <ProtectedRoute>
+                        <DestinationDetails />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/hotel/:id"
+                    element={
+                      <ProtectedRoute>
+                        <HotelDetails />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/food/:id"
+                    element={
+                      <ProtectedRoute>
+                        <FoodDetails />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/shopping/:id"
+                    element={
+                      <ProtectedRoute>
+                        <ShoppingDetails />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/transport/:id"
+                    element={
+                      <ProtectedRoute>
+                        <TransportDetails />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+              </Suspense>
+              {import.meta.env.VITE_TEMPO === "true" && useRoutes(routes)}
+              {!isAuthPage && <BottomNavigation />}
+            </div>
           </div>
-        </div>
-      </UserInteractionsProvider>
-    </FavoritesProvider>
+        </UserInteractionsProvider>
+      </FavoritesProvider>
+    </AuthProvider>
   );
 }
 

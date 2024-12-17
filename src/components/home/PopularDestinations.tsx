@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import DestinationCard from "./DestinationCard";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useNavigate } from "react-router-dom";
-import { getWikipediaInfo } from "@/lib/wikipedia";
 import { destinationsList } from "@/data/destinations";
+import { getWikipediaInfo } from "@/lib/wikipedia";
 
 interface WikiInfo {
   extract: string;
@@ -15,6 +15,7 @@ interface Destination {
   id: string;
   title: string;
   rating: number;
+  image: string;
   wikipedia?: {
     lang?: string;
     title: string;
@@ -30,30 +31,34 @@ const PopularDestinations = ({
 }: PopularDestinationsProps) => {
   const navigate = useNavigate();
   const { toggleFavorite, isFavorite } = useFavorites();
-  const [wikiInfo, setWikiInfo] = useState<Record<string, WikiInfo>>({});
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const fetchWikiInfo = async () => {
-      const wikiData: Record<string, WikiInfo> = {};
-
+    const loadThumbnails = async () => {
+      const thumbnailData: Record<string, string> = {};
       for (const destination of propDestinations) {
-        if (destination?.wikipedia) {
-          const info = await getWikipediaInfo(destination.wikipedia);
-          if (info) {
-            wikiData[destination.id] = info;
+        if (destination.wikipedia?.title || destination.title) {
+          const info = await getWikipediaInfo(
+            destination.wikipedia || { title: destination.title },
+          );
+          if (info?.thumbnail) {
+            thumbnailData[destination.id] = info.thumbnail;
+          } else {
+            thumbnailData[destination.id] = destination.image;
           }
+        } else {
+          thumbnailData[destination.id] = destination.image;
         }
       }
-
-      setWikiInfo(wikiData);
+      setThumbnails(thumbnailData);
     };
 
-    fetchWikiInfo();
+    loadThumbnails();
   }, [propDestinations]);
 
   return (
     <div className="w-full bg-white py-4">
-      <h2 className="text-base font-semibold text-gray-900 mb-4 px-4">
+      <h2 className="text-xl font-semibold text-gray-900 mb-4 px-4">
         Popular Destinations
       </h2>
 
@@ -62,7 +67,7 @@ const PopularDestinations = ({
           <div key={destination.id} className="flex-none w-[250px] snap-start">
             <DestinationCard
               image={
-                wikiInfo[destination.id]?.thumbnail ||
+                thumbnails[destination.id] ||
                 destination.image ||
                 `https://dummyimage.com/600x600/cccccc/ffffff&text=${destination.title}`
               }
