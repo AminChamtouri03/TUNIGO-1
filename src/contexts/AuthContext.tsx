@@ -18,6 +18,7 @@ type AuthContextType = {
   signup: (
     email: string,
     password: string,
+    username: string,
   ) => Promise<{ error: AuthError | null }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
@@ -52,6 +53,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const createInitialProfile = async (userId: string, username: string) => {
+    try {
+      const { error } = await supabase.from("user_profiles").insert([
+        {
+          auth_id: userId,
+          name: username,
+          preferences: {},
+        },
+      ]);
+
+      if (error) throw error;
+    } catch (err) {
+      console.error("Error creating user profile:", err);
+    }
+  };
+
   const login = async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -64,15 +81,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (email: string, password: string, username: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            username: username, // Store username in auth metadata
+          },
         },
       });
+
+      if (!error && data.user) {
+        // Create initial profile with username
+        await createInitialProfile(data.user.id, username);
+      }
+
       return { error };
     } catch (error) {
       return { error: error as AuthError };

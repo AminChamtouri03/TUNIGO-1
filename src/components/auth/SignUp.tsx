@@ -14,6 +14,7 @@ const SignUp = () => {
   const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState({
     email: "",
+    username: "",
     password: "",
     confirmPassword: "",
   });
@@ -27,12 +28,23 @@ const SignUp = () => {
       return;
     }
 
+    if (formData.username.length < 3) {
+      setError("Username must be at least 3 characters long");
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      setError("Username can only contain letters, numbers, and underscores");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const { error: signupError } = await signup(
         formData.email,
         formData.password,
+        formData.username,
       );
 
       if (signupError) {
@@ -85,6 +97,17 @@ const SignUp = () => {
             value={formData.email}
             onChange={(e) =>
               setFormData({ ...formData, email: e.target.value })
+            }
+            className="h-12 px-4 bg-white/20 border-white/20 text-white placeholder:text-white/60"
+            required
+          />
+
+          <Input
+            type="text"
+            placeholder="Username"
+            value={formData.username}
+            onChange={(e) =>
+              setFormData({ ...formData, username: e.target.value })
             }
             className="h-12 px-4 bg-white/20 border-white/20 text-white placeholder:text-white/60"
             required
