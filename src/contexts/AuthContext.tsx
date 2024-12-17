@@ -55,6 +55,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const createInitialProfile = async (userId: string, username: string) => {
     try {
+      // Check if profile already exists
+      const { data: existingProfile } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("auth_id", userId)
+        .single();
+
+      if (existingProfile) {
+        return { error: null };
+      }
+
+      // Create new profile
       const { error } = await supabase.from("user_profiles").insert([
         {
           auth_id: userId,
@@ -63,18 +75,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       ]);
 
-      if (error) throw error;
+      return { error };
     } catch (err) {
       console.error("Error creating user profile:", err);
+      return { error: err instanceof Error ? err : new Error("Unknown error") };
     }
   };
 
   const login = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+
+      if (!error && data.user) {
+        // Ensure profile exists
+        await createInitialProfile(data.user.id, email.split("@")[0]);
+      }
+
       return { error };
     } catch (error) {
       return { error: error as AuthError };
@@ -87,16 +106,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
-            username: username, // Store username in auth metadata
+            username: username,
           },
         },
       });
 
       if (!error && data.user) {
-        // Create initial profile with username
-        await createInitialProfile(data.user.id, username);
+        // Create initial profile
+        const { error: profileError } = await createInitialProfile(
+          data.user.id,
+          username,
+        );
+        if (profileError) {
+          return { error: profileError as AuthError };
+        }
       }
 
       return { error };

@@ -12,19 +12,19 @@ export function useProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user]);
-
   const fetchProfile = async () => {
+    if (!user) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from("user_profiles")
         .select("*")
-        .eq("auth_id", user?.id)
+        .eq("auth_id", user.id)
         .single();
 
       if (error) throw error;
@@ -38,13 +38,40 @@ export function useProfile() {
     }
   };
 
+  useEffect(() => {
+    fetchProfile();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel("profile-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_profiles",
+          filter: `auth_id=eq.${user?.id}`,
+        },
+        () => {
+          fetchProfile();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   const updateProfile = async (updates: ProfileUpdate) => {
+    if (!user) return { error: "No user logged in" };
+
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from("user_profiles")
         .update(updates)
-        .eq("auth_id", user?.id)
+        .eq("auth_id", user.id)
         .select()
         .single();
 
@@ -63,44 +90,11 @@ export function useProfile() {
     }
   };
 
-  const createProfile = async (name: string) => {
-    if (!user) return { error: "No user logged in" };
-
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("user_profiles")
-        .insert([
-          {
-            auth_id: user.id,
-            name,
-            preferences: {},
-          },
-        ])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setProfile(data);
-      return { data, error: null };
-    } catch (err) {
-      console.error("Error creating profile:", err);
-      return {
-        data: null,
-        error: err instanceof Error ? err.message : "Error creating profile",
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return {
     profile,
     loading,
     error,
     updateProfile,
-    createProfile,
     refreshProfile: fetchProfile,
   };
 }
