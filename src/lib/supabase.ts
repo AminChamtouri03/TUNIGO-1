@@ -1,11 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/supabase";
 
-// Default to a placeholder project during development
-const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL || "https://your-project.supabase.co";
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY || "your-anon-key";
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn("Missing Supabase credentials - using development fallbacks");
+}
+
+export const supabase = createClient<Database>(
+  supabaseUrl || "https://your-project.supabase.co",
+  supabaseAnonKey || "your-anon-key",
+);
 
 export type { User } from "@supabase/supabase-js";

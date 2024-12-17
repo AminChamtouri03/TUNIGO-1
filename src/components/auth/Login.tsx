@@ -4,20 +4,41 @@ import { Eye, EyeOff, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState({
-    username: "",
+    email: "",
     password: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(formData.username, formData.password);
-    navigate("/");
+    setError("");
+    setLoading(true);
+
+    try {
+      const { error: loginError } = await login(
+        formData.email,
+        formData.password,
+      );
+
+      if (loginError) {
+        setError(loginError.message);
+        return;
+      }
+
+      navigate("/");
+    } catch (err) {
+      setError("An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,15 +61,22 @@ const Login = () => {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-2">
             <Input
-              type="text"
-              placeholder="Username"
-              value={formData.username}
+              type="email"
+              placeholder="Email"
+              value={formData.email}
               onChange={(e) =>
-                setFormData({ ...formData, username: e.target.value })
+                setFormData({ ...formData, email: e.target.value })
               }
               className="w-full h-12 px-4 bg-white/20 border-white/20 text-white placeholder:text-white/60"
+              required
             />
           </div>
 
@@ -61,6 +89,7 @@ const Login = () => {
                 setFormData({ ...formData, password: e.target.value })
               }
               className="w-full h-12 px-4 bg-white/20 border-white/20 text-white placeholder:text-white/60 pr-10"
+              required
             />
             <button
               type="button"
@@ -88,8 +117,9 @@ const Login = () => {
           <Button
             type="submit"
             className="w-full py-6 text-lg bg-white text-[#00A9FF] hover:bg-white/90"
+            disabled={loading}
           >
-            LOGIN
+            {loading ? "Signing in..." : "LOGIN"}
           </Button>
         </form>
 

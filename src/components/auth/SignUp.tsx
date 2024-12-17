@@ -3,36 +3,54 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { signup } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState({
-    fullName: "",
     email: "",
-    nationality: "",
-    otherNationality: "",
     password: "",
     confirmPassword: "",
-    gender: "",
-    termsAccepted: false,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Add signup logic here
-    login(formData.email, formData.password); // Auto login after signup
-    navigate("/");
+    setError("");
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error: signupError } = await signup(
+        formData.email,
+        formData.password,
+      );
+
+      if (signupError) {
+        setError(signupError.message);
+        return;
+      }
+
+      // Show success message and redirect to login
+      navigate("/login", {
+        state: {
+          message: "Please check your email to confirm your account",
+        },
+      });
+    } catch (err) {
+      setError("An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -55,15 +73,11 @@ const SignUp = () => {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            type="text"
-            placeholder="Full Name"
-            value={formData.fullName}
-            onChange={(e) =>
-              setFormData({ ...formData, fullName: e.target.value })
-            }
-            className="h-12 px-4 bg-white/20 border-white/20 text-white placeholder:text-white/60"
-          />
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
           <Input
             type="email"
@@ -73,43 +87,8 @@ const SignUp = () => {
               setFormData({ ...formData, email: e.target.value })
             }
             className="h-12 px-4 bg-white/20 border-white/20 text-white placeholder:text-white/60"
+            required
           />
-
-          <div className="space-y-2">
-            <Select
-              onValueChange={(value) =>
-                setFormData({
-                  ...formData,
-                  nationality: value,
-                  otherNationality:
-                    value === "other" ? "" : formData.otherNationality,
-                })
-              }
-            >
-              <SelectTrigger className="h-12 px-4 bg-white/20 border-white/20 text-white hover:bg-white/30">
-                <SelectValue
-                  placeholder="Select Nationality"
-                  className="text-white/60"
-                />
-              </SelectTrigger>
-              <SelectContent className="bg-white/90 backdrop-blur-md border-white/20">
-                <SelectItem value="tunisian">Tunisian</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {formData.nationality === "other" && (
-              <Input
-                type="text"
-                placeholder="Enter your nationality"
-                value={formData.otherNationality}
-                onChange={(e) =>
-                  setFormData({ ...formData, otherNationality: e.target.value })
-                }
-                className="h-12 px-4 bg-white/20 border-white/20 text-white placeholder:text-white/60"
-              />
-            )}
-          </div>
 
           <div className="relative">
             <Input
@@ -120,6 +99,7 @@ const SignUp = () => {
                 setFormData({ ...formData, password: e.target.value })
               }
               className="h-12 px-4 bg-white/20 border-white/20 text-white placeholder:text-white/60 pr-10"
+              required
             />
             <button
               type="button"
@@ -142,48 +122,15 @@ const SignUp = () => {
               setFormData({ ...formData, confirmPassword: e.target.value })
             }
             className="h-12 px-4 bg-white/20 border-white/20 text-white placeholder:text-white/60"
+            required
           />
-
-          <Select
-            onValueChange={(value) =>
-              setFormData({ ...formData, gender: value })
-            }
-          >
-            <SelectTrigger className="h-12 px-4 bg-white/20 border-white/20 text-white hover:bg-white/30">
-              <SelectValue
-                placeholder="Select Gender"
-                className="text-white/60"
-              />
-            </SelectTrigger>
-            <SelectContent className="bg-white/90 backdrop-blur-md border-white/20">
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="terms"
-              checked={formData.termsAccepted}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, termsAccepted: checked as boolean })
-              }
-              className="border-white/20 data-[state=checked]:bg-white data-[state=checked]:text-[#00A9FF]"
-            />
-            <label
-              htmlFor="terms"
-              className="text-sm text-white/80 leading-none"
-            >
-              I accept the terms and conditions
-            </label>
-          </div>
 
           <Button
             type="submit"
             className="w-full py-6 text-lg bg-white text-[#00A9FF] hover:bg-white/90"
+            disabled={loading}
           >
-            Create Account
+            {loading ? "Creating Account..." : "Create Account"}
           </Button>
         </form>
 
