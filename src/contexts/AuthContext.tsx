@@ -3,10 +3,12 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
   ReactNode,
 } from "react";
 import { User, AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import type { UserProfileInsert } from "@/types/supabase";
 
 type AuthContextType = {
   isAuthenticated: boolean;
@@ -33,26 +35,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsAuthenticated(!!session?.user);
-      setLoading(false);
-    });
-
-    // Listen for changes on auth state (logged in, signed out, etc.)
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null);
-      setIsAuthenticated(!!session?.user);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const createInitialProfile = async (userId: string, username: string) => {
     try {
       // Check if profile already exists
@@ -66,21 +48,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: null };
       }
 
-      // Create new profile
-      const { error } = await supabase.from("user_profiles").insert([
-        {
-          auth_id: userId,
-          name: username,
-          preferences: {},
+      // Create new profile with default preferences
+      const newProfile: UserProfileInsert = {
+        auth_id: userId,
+        name: username,
+        preferences: {
+          theme: "light",
+          language: "en",
+          notifications: true,
+          location: null,
+          profileImage: null,
+          favorites: [],
+          lastVisited: [],
         },
-      ]);
+      };
 
-      return { error };
+      const { error } = await supabase
+        .from("user_profiles")
+        .insert([newProfile]);
+
+      if (error) throw error;
+
+      return { error: null };
     } catch (err) {
       console.error("Error creating user profile:", err);
       return { error: err instanceof Error ? err : new Error("Unknown error") };
     }
   };
+
+  const initializeAuth = useCallback(async () => {
+    try {
+      // Get initial session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      setIsAuthenticated(!!session?.user);
+
+      // If we have a user, ensure their profile exists
+      if (session?.user) {
+        await createInitialProfile(
+          session.user.id,
+          session.user.email?.split("@")[0] || "user",
+        );
+      }
+    } catch (error) {
+      console.error("Error initializing auth:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    initializeAuth();
+
+    // Listen for changes on auth state (logged in, signed out, etc.)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(session?.user ?? null);
+      setIsAuthenticated(!!session?.user);
+
+      if (session?.user) {
+        await createInitialProfile(
+          session.user.id,
+          session.user.email?.split("@")[0] || "user",
+        );
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [initializeAuth]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -91,7 +129,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!error && data.user) {
         // Ensure profile exists
-        await createInitialProfile(data.user.id, email.split("@")[0]);
+        await createInitialProfile(
+          data.user.id,
+          data.user.email?.split("@")[0] || "user",
+        );
       }
 
       return { error };
@@ -132,6 +173,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await supabase.auth.signOut();
+      setUser(null);
+      setIsAuthenticated(false);
     } catch (error) {
       console.error("Error logging out:", error);
     }

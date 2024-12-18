@@ -1,11 +1,5 @@
 import { Suspense } from "react";
-import {
-  useRoutes,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-} from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
 import { UserInteractionsProvider } from "./contexts/UserInteractionsContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -26,13 +20,21 @@ import FoodDetails from "./components/food/FoodDetails";
 import ShoppingDetails from "./components/shopping/ShoppingDetails";
 import TransportDetails from "./components/transport/TransportDetails";
 import BottomNavigation from "./components/home/BottomNavigation";
-import routes from "tempo-routes";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;
@@ -66,14 +68,6 @@ function App() {
                     }
                   />
                   <Route
-                    path="/food"
-                    element={
-                      <ProtectedRoute>
-                        <Food />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
                     path="/discover"
                     element={
                       <ProtectedRoute>
@@ -86,6 +80,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <Hotels />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/food"
+                    element={
+                      <ProtectedRoute>
+                        <Food />
                       </ProtectedRoute>
                     }
                   />
@@ -163,7 +165,6 @@ function App() {
                   />
                 </Routes>
               </Suspense>
-              {import.meta.env.VITE_TEMPO === "true" && useRoutes(routes)}
               {!isAuthPage && <BottomNavigation />}
             </div>
           </div>
