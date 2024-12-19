@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { supabase } from "@/lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 type User = {
   id: string;
@@ -31,32 +39,123 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check active sessions and sets the user
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user as User);
+        setIsAuthenticated(true);
+      }
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user as User);
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const login = async (email: string, password: string) => {
-    // Mock login
-    return { error: null };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      navigate("/");
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
   };
 
   const signup = async (email: string, password: string, username: string) => {
-    // Mock signup
-    return { error: null };
+    try {
+      // 1. Sign up the user
+      const {
+        data: { user },
+        error: signUpError,
+      } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+            name: username,
+          },
+        },
+      });
+
+      if (signUpError) throw signUpError;
+      if (!user) throw new Error("No user returned from signup");
+
+      // 2. Create user profile
+      const { error: profileError } = await supabase
+        .from("user_profiles")
+        .insert([
+          {
+            auth_id: user.id,
+            name: username,
+            preferences: {},
+          },
+        ])
+        .select();
+
+      if (profileError) throw profileError;
+
+      // 3. Navigate to login
+      navigate("/login", {
+        state: { message: "Account created successfully. Please login." },
+      });
+
+      return { error: null };
+    } catch (error) {
+      console.error("Signup error:", error);
+      return { error: error as Error };
+    }
   };
 
   const logout = async () => {
-    // Mock logout
-    setUser(null);
-    setIsAuthenticated(false);
+    await supabase.auth.signOut();
+    navigate("/login");
   };
 
   const resetPassword = async (email: string) => {
-    // Mock reset password
-    return { error: null };
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
   };
 
   const updatePassword = async (newPassword: string) => {
-    // Mock update password
-    return { error: null };
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
   };
 
   return (

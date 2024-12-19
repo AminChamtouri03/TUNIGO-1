@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { MapPin, Map, Thermometer, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SearchBar from "./home/SearchBar";
 import CategoryShortcuts from "./home/CategoryShortcuts";
 import PopularDestinations from "./home/PopularDestinations";
+import { useAuth } from "@/contexts/AuthContext";
 import { getWikipediaInfo } from "@/lib/wikipedia";
 import { destinationsList } from "@/data/destinations";
 
@@ -31,6 +32,7 @@ const calculateDistance = (coords1: Coordinates, coords2: Coordinates) => {
 
 const Home = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [activeCategory, setActiveCategory] = useState<CategoryType>("Hotel");
   const [heroImage, setHeroImage] = useState<string>("");
   const [temperature, setTemperature] = useState<number | null>(null);
@@ -47,7 +49,6 @@ const Home = () => {
       return distanceA - distanceB;
     });
 
-    // Add distance property to each destination
     const destinationsWithDistance = sortedDestinations.map((dest) => ({
       ...dest,
       distance: calculateDistance(coords, dest.coordinates),
@@ -135,7 +136,6 @@ const Home = () => {
 
   useEffect(() => {
     const fetchHeroImage = async () => {
-      // Use the closest destination for the hero image
       if (nearbyDestinations.length > 0) {
         const info = await getWikipediaInfo(
           nearbyDestinations[0].wikipedia || {
@@ -180,10 +180,28 @@ const Home = () => {
             />
           </Button>
         </div>
-        <div className="flex items-center gap-1 text-gray-600">
-          <Thermometer className="h-5 w-5" />
-          <span className="text-sm font-medium">{temperature}°C</span>
-        </div>
+        {!isAuthenticated ? (
+          <div className="flex items-center gap-2">
+            <Link to="/login">
+              <Button variant="ghost" size="sm" className="text-[#00A9FF]">
+                Login
+              </Button>
+            </Link>
+            <Link to="/signup">
+              <Button
+                size="sm"
+                className="bg-[#00A9FF] text-white hover:bg-[#00A9FF]/90"
+              >
+                Sign Up
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 text-gray-600">
+            <Thermometer className="h-5 w-5" />
+            <span className="text-sm font-medium">{temperature}°C</span>
+          </div>
+        )}
       </div>
 
       {/* Hero Image */}

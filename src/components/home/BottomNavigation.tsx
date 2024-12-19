@@ -18,6 +18,7 @@ const navigationItems: NavigationItem[] = [
   { icon: HomeIcon, label: "Home", path: "/" },
   { icon: Search, label: "Discover", path: "/discover" },
   { icon: MapPin, label: "Map", path: "/map" },
+  { icon: User, label: "Profile", path: "/profile" },
 ];
 
 const BottomNavigation = ({
@@ -37,20 +38,19 @@ const BottomNavigation = ({
   const activeItem = getActiveItem(location.pathname);
 
   const handleClick = (item: NavigationItem) => {
-    onItemClick(item.label);
-    navigate(item.path);
+    if (item.label === "Profile" && !isAuthenticated) {
+      navigate("/login");
+    } else {
+      onItemClick(item.label);
+      navigate(item.path);
+    }
   };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 flex justify-center z-50">
       <div className="w-[390px] bg-white border-t border-gray-100">
         <div className="flex items-center justify-around py-2">
-          {[
-            ...navigationItems,
-            ...(isAuthenticated
-              ? [{ icon: User, label: "Profile", path: "/profile" }]
-              : []),
-          ].map((item) => {
+          {navigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.label === activeItem;
 

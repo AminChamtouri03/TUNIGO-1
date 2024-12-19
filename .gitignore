@@ -7,7 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules/*
+node_modules
 dist
 dist-ssr
 *.local
@@ -23,7 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 
-!node_modules/.vite
-
+# Tempo
+node_modules/
 **/tempobook/dynamic/
 **/tempobook/storyboards/
+.next-tb
+.tempo

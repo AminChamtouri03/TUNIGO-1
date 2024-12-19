@@ -9,6 +9,7 @@ import Food from "./components/food";
 import Shopping from "./components/shopping";
 import Transport from "./components/transport";
 import Profile from "./components/profile/Profile";
+import GuestProfile from "./components/profile/GuestProfile";
 import Map from "./components/map/Map";
 import Login from "./components/auth/Login";
 import SignUp from "./components/auth/SignUp";
@@ -41,14 +42,13 @@ function AppContent() {
               <Route path="/food/:id" element={<FoodDetails />} />
               <Route path="/shopping/:id" element={<ShoppingDetails />} />
               <Route path="/transport/:id" element={<TransportDetails />} />
-              {isAuthenticated && (
-                <>
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                </>
-              )}
+              <Route
+                path="/profile"
+                element={isAuthenticated ? <Profile /> : <GuestProfile />}
+              />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
             </Routes>
             <BottomNavigation />
           </div>
