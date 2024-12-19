@@ -1,16 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/supabase";
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn("Missing Supabase credentials - using development fallbacks");
-}
-
-export const supabase = createClient<Database>(
-  supabaseUrl || "https://your-project.supabase.co",
-  supabaseAnonKey || "your-anon-key",
-);
-
-export type { User } from "@supabase/supabase-js";
+// Mock Supabase client for local development
+export type User = {
+  id: string;
+  email: string;
+  user_metadata: {
+    username: string;
+    name: string;
+  };
+};

@@ -58,8 +58,9 @@ const Home = () => {
 
   const fetchWeather = async (lat: number, lon: number) => {
     try {
+      const apiKey = import.meta.env.VITE_WEATHER_API_KEY;
       const response = await fetch(
-        `https://api.weatherapi.com/v1/current.json?key=${import.meta.env.VITE_WEATHER_API_KEY}&q=${lat},${lon}`,
+        `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${lat},${lon}`,
       );
       const data = await response.json();
       setTemperature(Math.round(data.current.temp_c));
@@ -91,11 +92,18 @@ const Home = () => {
     setIsRefreshing(true);
     setLocation("Detecting location...");
 
+    // Default to Tunis coordinates
+    const defaultCoords = { lat: 36.8065, lng: 10.1815 };
+
     if (navigator.geolocation) {
       try {
         const position = await new Promise<GeolocationPosition>(
           (resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject);
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0,
+            });
           },
         );
 
@@ -110,20 +118,16 @@ const Home = () => {
         ]);
       } catch (error) {
         console.error("Error getting location:", error);
-        setLocation("Location access denied");
-        // Fallback to Tunis
-        const tunis = { lat: 36.8065, lng: 10.1815 };
-        setUserCoords(tunis);
-        updateNearbyDestinations(tunis);
-        await fetchWeather(tunis.lat, tunis.lng);
+        setLocation("Tunis");
+        setUserCoords(defaultCoords);
+        updateNearbyDestinations(defaultCoords);
+        await fetchWeather(defaultCoords.lat, defaultCoords.lng);
       }
     } else {
-      setLocation("Geolocation not supported");
-      // Fallback to Tunis
-      const tunis = { lat: 36.8065, lng: 10.1815 };
-      setUserCoords(tunis);
-      updateNearbyDestinations(tunis);
-      await fetchWeather(tunis.lat, tunis.lng);
+      setLocation("Tunis");
+      setUserCoords(defaultCoords);
+      updateNearbyDestinations(defaultCoords);
+      await fetchWeather(defaultCoords.lat, defaultCoords.lng);
     }
 
     setIsRefreshing(false);

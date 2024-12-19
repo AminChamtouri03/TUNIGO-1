@@ -12,6 +12,7 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     username: "",
@@ -52,18 +53,31 @@ const SignUp = () => {
         return;
       }
 
-      // Show success message and redirect to login
-      navigate("/login", {
-        state: {
-          message: "Please check your email to confirm your account",
-        },
-      });
+      setSuccess(true);
+      setTimeout(() => {
+        navigate("/login", {
+          state: { message: "Account created successfully. Please login." },
+        });
+      }, 1500);
     } catch (err) {
       setError("An unexpected error occurred");
     } finally {
       setLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#00A9FF] to-blue-600 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-white/10 backdrop-blur-md rounded-xl shadow-lg p-6 text-center">
+          <div className="text-white mb-4">
+            <h2 className="text-2xl font-semibold mb-2">Account Created!</h2>
+            <p>Redirecting to login...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#00A9FF] to-blue-600 flex flex-col items-center justify-center p-4">

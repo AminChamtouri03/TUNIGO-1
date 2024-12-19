@@ -1,6 +1,4 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "./AuthContext";
 
 type Rating = {
   destinationId: string;
@@ -18,10 +16,10 @@ type UserComment = {
 type UserInteractionsContextType = {
   ratings: Rating[];
   userComments: UserComment[];
-  addRating: (destinationId: string, rating: number) => Promise<void>;
+  addRating: (destinationId: string, rating: number) => void;
   getRating: (destinationId: string) => number | null;
-  addComment: (destinationId: string, comment: string) => Promise<void>;
-  removeComment: (commentId: string) => Promise<void>;
+  addComment: (destinationId: string, comment: string) => void;
+  removeComment: (commentId: string) => void;
   getUserComments: (destinationId: string) => UserComment[];
 };
 
@@ -34,35 +32,19 @@ export function UserInteractionsProvider({
 }: {
   children: ReactNode;
 }) {
-  const { user } = useAuth();
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [userComments, setUserComments] = useState<UserComment[]>([]);
 
-  const addRating = async (destinationId: string, rating: number) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase.from("reviews").upsert({
-        user_id: user.id,
-        destination_id: destinationId,
-        rating,
-        comment: "", // Required field, but we're only updating rating
-      });
-
-      if (error) throw error;
-
-      setRatings((prev) => {
-        const existing = prev.find((r) => r.destinationId === destinationId);
-        if (existing) {
-          return prev.map((r) =>
-            r.destinationId === destinationId ? { ...r, rating } : r,
-          );
-        }
-        return [...prev, { destinationId, rating }];
-      });
-    } catch (err) {
-      console.error("Error adding rating:", err);
-    }
+  const addRating = (destinationId: string, rating: number) => {
+    setRatings((prev) => {
+      const existing = prev.find((r) => r.destinationId === destinationId);
+      if (existing) {
+        return prev.map((r) =>
+          r.destinationId === destinationId ? { ...r, rating } : r,
+        );
+      }
+      return [...prev, { destinationId, rating }];
+    });
   };
 
   const getRating = (destinationId: string): number | null => {
@@ -70,55 +52,19 @@ export function UserInteractionsProvider({
     return rating ? rating.rating : null;
   };
 
-  const addComment = async (destinationId: string, comment: string) => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("reviews")
-        .insert([
-          {
-            user_id: user.id,
-            destination_id: destinationId,
-            comment,
-            rating: 0, // Required field, but we're only adding comment
-          },
-        ])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const newComment: UserComment = {
-        id: data.id,
-        destinationId,
-        comment,
-        date: new Date().toISOString(),
-        user: "You",
-      };
-
-      setUserComments((prev) => [...prev, newComment]);
-    } catch (err) {
-      console.error("Error adding comment:", err);
-    }
+  const addComment = (destinationId: string, comment: string) => {
+    const newComment: UserComment = {
+      id: Math.random().toString(36).substr(2, 9),
+      destinationId,
+      comment,
+      date: new Date().toLocaleDateString(),
+      user: "You",
+    };
+    setUserComments((prev) => [...prev, newComment]);
   };
 
-  const removeComment = async (commentId: string) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from("reviews")
-        .delete()
-        .eq("id", commentId)
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-
-      setUserComments((prev) => prev.filter((c) => c.id !== commentId));
-    } catch (err) {
-      console.error("Error removing comment:", err);
-    }
+  const removeComment = (commentId: string) => {
+    setUserComments((prev) => prev.filter((c) => c.id !== commentId));
   };
 
   const getUserComments = (destinationId: string): UserComment[] => {

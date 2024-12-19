@@ -303,6 +303,7 @@ const DestinationDetails = () => {
               placeholder="Add a comment..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
               className="flex-1"
             />
             <Button onClick={handleAddComment}>Post</Button>
