@@ -12,32 +12,6 @@ export function useProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const createProfile = async (userId: string) => {
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      const { data: newProfile, error: createError } = await supabase
-        .from("user_profiles")
-        .insert([
-          {
-            auth_id: userId,
-            name:
-              userData.user?.user_metadata?.name ||
-              userData.user?.email?.split("@")[0] ||
-              "User",
-            preferences: {},
-          },
-        ])
-        .select()
-        .single();
-
-      if (createError) throw createError;
-      return newProfile;
-    } catch (err) {
-      console.error("Error creating profile:", err);
-      return null;
-    }
-  };
-
   const fetchProfile = async () => {
     if (!user) {
       setProfile(null);
@@ -47,29 +21,21 @@ export function useProfile() {
 
     try {
       setLoading(true);
+      setError(null);
 
-      // Get profile
-      const { data, error } = await supabase
+      const { data: existingProfile, error: fetchError } = await supabase
         .from("user_profiles")
         .select("*")
         .eq("auth_id", user.id)
         .single();
 
-      if (error) {
-        // If profile doesn't exist, create it
-        if (error.code === "PGRST116") {
-          const newProfile = await createProfile(user.id);
-          if (newProfile) {
-            setProfile(newProfile);
-            return;
-          }
-        }
-        throw error;
+      if (fetchError) {
+        throw fetchError;
       }
 
-      setProfile(data);
+      setProfile(existingProfile);
     } catch (err) {
-      console.error("Error fetching profile:", err);
+      console.error("Error in fetchProfile:", err);
       setError(err instanceof Error ? err.message : "Error fetching profile");
     } finally {
       setLoading(false);
@@ -81,7 +47,7 @@ export function useProfile() {
 
     // Subscribe to realtime changes
     const channel = supabase
-      .channel("profile-changes")
+      .channel(`profile-changes-${user?.id}`)
       .on(
         "postgres_changes",
         {

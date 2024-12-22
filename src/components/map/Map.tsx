@@ -9,14 +9,31 @@ import {
   X,
   Map as MapIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "../../components/ui/button";
+import { useLocation } from "../../contexts/LocationContext";
+
+const calculateDistance = (
+  coords1: { lat: number; lng: number },
+  coords2: { lat: number; lng: number },
+) => {
+  const R = 6371; // Earth's radius in km
+  const dLat = ((coords2.lat - coords1.lat) * Math.PI) / 180;
+  const dLon = ((coords2.lng - coords1.lng) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((coords1.lat * Math.PI) / 180) *
+      Math.cos((coords2.lat * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
 const nearbyPlaces = [
   {
     id: "medina",
     name: "Medina of Tunis",
     description: "UNESCO World Heritage site with traditional souks",
-    distance: "1.2 km",
     position: [36.7992, 10.1706],
     transport: [
       { type: "Metro", icon: Train, time: "10 min", safety: "Very Safe" },
@@ -24,44 +41,38 @@ const nearbyPlaces = [
       { type: "Taxi", icon: Car, time: "8 min", safety: "Safe" },
     ],
   },
-  {
-    id: "bardo",
-    name: "Bardo Museum",
-    description: "World's largest collection of Roman mosaics",
-    distance: "2.5 km",
-    position: [36.8092, 10.1345],
-    transport: [
-      { type: "Metro", icon: Train, time: "15 min", safety: "Very Safe" },
-      { type: "Bus", icon: Bus, time: "25 min", safety: "Safe" },
-      { type: "Taxi", icon: Car, time: "12 min", safety: "Safe" },
-    ],
-  },
-  {
-    id: "avenue",
-    name: "Avenue Habib Bourguiba",
-    description: "Main avenue of Tunis with colonial architecture",
-    distance: "0.8 km",
-    position: [36.7992, 10.1815],
-    transport: [
-      { type: "Metro", icon: Train, time: "5 min", safety: "Very Safe" },
-      { type: "Bus", icon: Bus, time: "10 min", safety: "Safe" },
-      { type: "Taxi", icon: Car, time: "5 min", safety: "Safe" },
-    ],
-  },
 ];
 
 const Map = () => {
   const navigate = useNavigate();
+  const {
+    coordinates,
+    locationName,
+    loading: locationLoading,
+    error: locationError,
+    updateLocation,
+  } = useLocation();
   const [selectedPlace, setSelectedPlace] = useState<
     (typeof nearbyPlaces)[0] | null
   >(null);
-  const [userLocation, setUserLocation] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
-  const [locationName, setLocationName] = useState("Unknown Location");
-  const [isLocating, setIsLocating] = useState(false);
   const [showTransport, setShowTransport] = useState(false);
+  const [sortedPlaces, setSortedPlaces] = useState(nearbyPlaces);
+
+  useEffect(() => {
+    if (coordinates) {
+      // Sort places by distance from current location
+      const placesWithDistance = nearbyPlaces.map((place) => ({
+        ...place,
+        distance: calculateDistance(coordinates, {
+          lat: place.position[0],
+          lng: place.position[1],
+        }),
+      }));
+
+      const sorted = placesWithDistance.sort((a, b) => a.distance - b.distance);
+      setSortedPlaces(sorted);
+    }
+  }, [coordinates]);
 
   const handleNavigate = () => {
     if (selectedPlace) {
@@ -73,69 +84,13 @@ const Map = () => {
   };
 
   const openInGoogleMaps = () => {
-    if (userLocation) {
+    if (coordinates) {
       window.open(
-        `https://www.google.com/maps/@${userLocation.lat},${userLocation.lng},15z`,
+        `https://www.google.com/maps/@${coordinates.lat},${coordinates.lng},15z`,
         "_blank",
       );
     }
   };
-
-  const getLocationName = async (lat: number, lng: number) => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-      );
-      const data = await response.json();
-      return (
-        data.address.city ||
-        data.address.town ||
-        data.address.suburb ||
-        "Unknown Location"
-      );
-    } catch (error) {
-      console.error("Error getting location name:", error);
-      return "Unknown Location";
-    }
-  };
-
-  const getCurrentLocation = async () => {
-    setIsLocating(true);
-    setLocationName("Detecting location...");
-
-    if (navigator.geolocation) {
-      try {
-        const position = await new Promise<GeolocationPosition>(
-          (resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-              timeout: 5000,
-              maximumAge: 0,
-            });
-          },
-        );
-
-        const { latitude: lat, longitude: lng } = position.coords;
-        setUserLocation({ lat, lng });
-
-        // Get location name
-        const name = await getLocationName(lat, lng);
-        setLocationName(name);
-      } catch (error) {
-        console.error("Error getting location:", error);
-        setLocationName("Unknown Location");
-      } finally {
-        setIsLocating(false);
-      }
-    } else {
-      setLocationName("Location not available");
-      setIsLocating(false);
-    }
-  };
-
-  useEffect(() => {
-    getCurrentLocation();
-  }, []);
 
   useEffect(() => {
     if (selectedPlace) {
@@ -151,6 +106,9 @@ const Map = () => {
           <div className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-[#00A9FF]" />
             <span className="text-sm">{locationName}</span>
+            {locationError && (
+              <span className="text-xs text-red-500">{locationError}</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -165,11 +123,11 @@ const Map = () => {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={getCurrentLocation}
-              disabled={isLocating}
+              onClick={updateLocation}
+              disabled={locationLoading}
             >
               <RefreshCw
-                className={`h-4 w-4 ${isLocating ? "animate-spin" : ""}`}
+                className={`h-4 w-4 ${locationLoading ? "animate-spin" : ""}`}
               />
             </Button>
           </div>
@@ -179,7 +137,7 @@ const Map = () => {
       {/* Map Container */}
       <div className="fixed top-[56px] left-0 right-0 z-10 w-full max-w-[390px] mx-auto h-[250px]">
         <iframe
-          src={`https://www.openstreetmap.org/export/embed.html?bbox=10.1315,36.7892,10.2315,36.8292&layer=mapnik&marker=${userLocation?.lat || 36.8065},${userLocation?.lng || 10.1815}`}
+          src={`https://www.openstreetmap.org/export/embed.html?bbox=10.1315,36.7892,10.2315,36.8292&layer=mapnik&marker=${coordinates?.lat || 36.8065},${coordinates?.lng || 10.1815}`}
           width="100%"
           height="250"
           style={{ border: 0 }}
@@ -191,7 +149,7 @@ const Map = () => {
       {/* Scrollable Content */}
       <div className="flex-1 overflow-auto mt-[306px] mb-[100px]">
         <div className="px-4 py-4 space-y-4">
-          {nearbyPlaces.map((place) => (
+          {sortedPlaces.map((place) => (
             <div
               key={place.id}
               className={`bg-gray-50 rounded-lg p-4 cursor-pointer ${selectedPlace?.id === place.id ? "ring-2 ring-[#00A9FF]" : ""}`}
@@ -202,7 +160,11 @@ const Map = () => {
                   <h3 className="font-semibold">{place.name}</h3>
                   <div className="flex items-center gap-1 text-sm text-gray-500">
                     <MapPin className="h-3 w-3" />
-                    <span>{place.distance}</span>
+                    <span>
+                      {place.distance
+                        ? `${place.distance.toFixed(1)} km`
+                        : "Calculating..."}
+                    </span>
                   </div>
                 </div>
               </div>

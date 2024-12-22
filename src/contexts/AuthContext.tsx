@@ -6,7 +6,6 @@ import {
   ReactNode,
 } from "react";
 import { supabase } from "@/lib/supabase";
-import { useNavigate } from "react-router-dom";
 
 type User = {
   id: string;
@@ -40,7 +39,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Check active sessions and sets the user
@@ -55,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         setUser(session.user as User);
         setIsAuthenticated(true);
@@ -77,7 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) throw error;
-      navigate("/");
       return { error: null };
     } catch (error) {
       return { error: error as Error };
@@ -86,11 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (email: string, password: string, username: string) => {
     try {
-      // 1. Sign up the user
-      const {
-        data: { user },
-        error: signUpError,
-      } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -101,38 +94,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
 
-      if (signUpError) throw signUpError;
-      if (!user) throw new Error("No user returned from signup");
-
-      // 2. Create user profile
-      const { error: profileError } = await supabase
-        .from("user_profiles")
-        .insert([
-          {
-            auth_id: user.id,
-            name: username,
-            preferences: {},
-          },
-        ])
-        .select();
-
-      if (profileError) throw profileError;
-
-      // 3. Navigate to login
-      navigate("/login", {
-        state: { message: "Account created successfully. Please login." },
-      });
-
+      if (error) throw error;
       return { error: null };
     } catch (error) {
-      console.error("Signup error:", error);
       return { error: error as Error };
     }
   };
 
   const logout = async () => {
     await supabase.auth.signOut();
-    navigate("/login");
   };
 
   const resetPassword = async (email: string) => {
