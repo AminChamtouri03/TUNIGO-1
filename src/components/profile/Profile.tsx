@@ -17,7 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 
 const DEFAULT_PROFILE_IMAGE =
-  "https://dummyimage.com/200x200/cccccc/ffffff&text=User";
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -108,6 +108,37 @@ const Profile = () => {
     navigate("/login");
   };
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
+        <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center mb-4">
+          <User className="h-12 w-12 text-gray-400" />
+        </div>
+        <h1 className="text-xl font-semibold text-center mb-2">
+          Welcome to TUNIGO
+        </h1>
+        <p className="text-sm text-gray-500 text-center mb-6">
+          Sign in to access your profile
+        </p>
+        <Button
+          className="w-full max-w-sm bg-[#00A9FF] hover:bg-[#00A9FF]/90 text-white py-6"
+          onClick={() => navigate("/login")}
+        >
+          Sign In
+        </Button>
+        <p className="mt-4 text-sm text-gray-600">
+          Don't have an account?{" "}
+          <button
+            onClick={() => navigate("/signup")}
+            className="text-[#00A9FF] hover:underline"
+          >
+            Sign up
+          </button>
+        </p>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -116,7 +147,7 @@ const Profile = () => {
     );
   }
 
-  if (!profile || !user) {
+  if (!profile) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <p>Profile not found</p>
@@ -192,7 +223,7 @@ const Profile = () => {
 
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-semibold text-center">
-              {profile.name}
+              {profile.name || user.email}
             </h1>
             <Button
               variant="ghost"

@@ -26,8 +26,14 @@ const amenityIcons: Record<string, any> = {
 const HotelDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addComment, removeComment, getUserComments, addRating, getRating } =
-    useUserInteractions();
+  const {
+    addComment,
+    removeComment,
+    getUserComments,
+    addRating,
+    getRating,
+    requireAuth,
+  } = useUserInteractions();
   const hotel = id ? hotels[id] : null;
   const [newComment, setNewComment] = useState("");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -71,6 +77,8 @@ const HotelDetails = () => {
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!requireAuth()) return;
+
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -84,6 +92,8 @@ const HotelDetails = () => {
   };
 
   const handleRemoveImage = (index: number) => {
+    if (!requireAuth()) return;
+
     const userImageIndex = index - (hotel.images?.length || 1);
     if (userImageIndex >= 0) {
       setUserImages((prev) => prev.filter((_, i) => i !== userImageIndex));

@@ -39,7 +39,7 @@ const BottomNavigation = ({
 
   const handleClick = (item: NavigationItem) => {
     if (item.label === "Profile" && !isAuthenticated) {
-      navigate("/login");
+      navigate("/guest-profile");
     } else {
       onItemClick(item.label);
       navigate(item.path);

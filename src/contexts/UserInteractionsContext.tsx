@@ -1,4 +1,7 @@
 import { createContext, useContext, useState, ReactNode } from "react";
+import { useAuth } from "./AuthContext";
+import { useNavigate } from "react-router-dom";
+import { AuthMessage } from "@/components/ui/auth-message";
 
 type Rating = {
   destinationId: string;
@@ -21,6 +24,7 @@ type UserInteractionsContextType = {
   addComment: (destinationId: string, comment: string) => void;
   removeComment: (commentId: string) => void;
   getUserComments: (destinationId: string) => UserComment[];
+  requireAuth: () => boolean;
 };
 
 const UserInteractionsContext = createContext<
@@ -34,8 +38,26 @@ export function UserInteractionsProvider({
 }) {
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [userComments, setUserComments] = useState<UserComment[]>([]);
+  const [showAuthMessage, setShowAuthMessage] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const requireAuth = () => {
+    if (!isAuthenticated) {
+      setShowAuthMessage(true);
+      return false;
+    }
+    return true;
+  };
+
+  const handleAuthMessageClose = () => {
+    setShowAuthMessage(false);
+    navigate("/guest-profile");
+  };
 
   const addRating = (destinationId: string, rating: number) => {
+    if (!requireAuth()) return;
+
     setRatings((prev) => {
       const existing = prev.find((r) => r.destinationId === destinationId);
       if (existing) {
@@ -53,6 +75,8 @@ export function UserInteractionsProvider({
   };
 
   const addComment = (destinationId: string, comment: string) => {
+    if (!requireAuth()) return;
+
     const newComment: UserComment = {
       id: Math.random().toString(36).substr(2, 9),
       destinationId,
@@ -64,6 +88,8 @@ export function UserInteractionsProvider({
   };
 
   const removeComment = (commentId: string) => {
+    if (!requireAuth()) return;
+
     setUserComments((prev) => prev.filter((c) => c.id !== commentId));
   };
 
@@ -81,9 +107,11 @@ export function UserInteractionsProvider({
         addComment,
         removeComment,
         getUserComments,
+        requireAuth,
       }}
     >
       {children}
+      <AuthMessage open={showAuthMessage} onClose={handleAuthMessageClose} />
     </UserInteractionsContext.Provider>
   );
 }

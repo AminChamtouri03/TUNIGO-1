@@ -4,6 +4,7 @@ import { UserInteractionsProvider } from "./contexts/UserInteractionsContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { LocationProvider } from "./contexts/LocationContext";
 import { AuthGuard } from "./components/ui/auth-guard";
+import { Toaster } from "./components/ui/toaster";
 import Home from "./components/home";
 import Discover from "./components/discover";
 import Hotels from "./components/hotels";
@@ -92,6 +93,7 @@ function App() {
                 <BottomNavigation />
               </div>
             </div>
+            <Toaster />
           </UserInteractionsProvider>
         </FavoritesProvider>
       </LocationProvider>

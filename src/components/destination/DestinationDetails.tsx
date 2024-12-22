@@ -22,15 +22,20 @@ interface WikiInfo {
   extract: string;
   thumbnail: string;
   url: string;
-  additionalImages: string[];
 }
 
 const DestinationDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toggleFavorite, isFavorite } = useFavorites();
-  const { addComment, removeComment, getUserComments, addRating, getRating } =
-    useUserInteractions();
+  const {
+    addComment,
+    removeComment,
+    getUserComments,
+    addRating,
+    getRating,
+    requireAuth,
+  } = useUserInteractions();
   const destination = id ? destinations[id] : null;
   const [wikiInfo, setWikiInfo] = useState<WikiInfo | null>(null);
   const [newComment, setNewComment] = useState("");
@@ -97,19 +102,23 @@ const DestinationDetails = () => {
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!requireAuth()) return;
+
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
         setUserImages((prev) => [...prev, base64String]);
-        setSelectedImageIndex(images.length); // Select the newly added image
+        setSelectedImageIndex(images.length);
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleRemoveImage = (index: number) => {
+    if (!requireAuth()) return;
+
     const userImageIndex = index - defaultImages.length;
     if (userImageIndex >= 0) {
       setUserImages((prev) => prev.filter((_, i) => i !== userImageIndex));

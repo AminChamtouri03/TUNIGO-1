@@ -6,6 +6,7 @@ import {
   ReactNode,
 } from "react";
 import { supabase } from "@/lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 type User = {
   id: string;
@@ -39,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check active sessions and sets the user
@@ -83,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (email: string, password: string, username: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -95,6 +97,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) throw error;
+
+      // Create user profile
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from("user_profiles")
+          .insert([
+            {
+              auth_id: data.user.id,
+              name: username,
+              preferences: {},
+            },
+          ]);
+
+        if (profileError) {
+          console.error("Error creating profile:", profileError);
+          throw new Error("Failed to create user profile");
+        }
+      }
+
       return { error: null };
     } catch (error) {
       return { error: error as Error };
@@ -103,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await supabase.auth.signOut();
+    navigate("/login");
   };
 
   const resetPassword = async (email: string) => {
