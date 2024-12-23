@@ -19,10 +19,10 @@ type UserComment = {
 type UserInteractionsContextType = {
   ratings: Rating[];
   userComments: UserComment[];
-  addRating: (destinationId: string, rating: number) => void;
+  addRating: (destinationId: string, rating: number) => boolean;
   getRating: (destinationId: string) => number | null;
-  addComment: (destinationId: string, comment: string) => void;
-  removeComment: (commentId: string) => void;
+  addComment: (destinationId: string, comment: string) => boolean;
+  removeComment: (commentId: string) => boolean;
   getUserComments: (destinationId: string) => UserComment[];
   requireAuth: () => boolean;
 };
@@ -45,6 +45,7 @@ export function UserInteractionsProvider({
   const requireAuth = () => {
     if (!isAuthenticated) {
       setShowAuthMessage(true);
+      navigate("/guest-profile");
       return false;
     }
     return true;
@@ -52,11 +53,10 @@ export function UserInteractionsProvider({
 
   const handleAuthMessageClose = () => {
     setShowAuthMessage(false);
-    navigate("/guest-profile");
   };
 
   const addRating = (destinationId: string, rating: number) => {
-    if (!requireAuth()) return;
+    if (!requireAuth()) return false;
 
     setRatings((prev) => {
       const existing = prev.find((r) => r.destinationId === destinationId);
@@ -67,15 +67,17 @@ export function UserInteractionsProvider({
       }
       return [...prev, { destinationId, rating }];
     });
+    return true;
   };
 
   const getRating = (destinationId: string): number | null => {
+    if (!isAuthenticated) return null;
     const rating = ratings.find((r) => r.destinationId === destinationId);
     return rating ? rating.rating : null;
   };
 
   const addComment = (destinationId: string, comment: string) => {
-    if (!requireAuth()) return;
+    if (!requireAuth()) return false;
 
     const newComment: UserComment = {
       id: Math.random().toString(36).substr(2, 9),
@@ -85,15 +87,18 @@ export function UserInteractionsProvider({
       user: "You",
     };
     setUserComments((prev) => [...prev, newComment]);
+    return true;
   };
 
   const removeComment = (commentId: string) => {
-    if (!requireAuth()) return;
+    if (!requireAuth()) return false;
 
     setUserComments((prev) => prev.filter((c) => c.id !== commentId));
+    return true;
   };
 
   const getUserComments = (destinationId: string): UserComment[] => {
+    if (!isAuthenticated) return [];
     return userComments.filter((c) => c.destinationId === destinationId);
   };
 

@@ -77,6 +77,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) throw error;
+
+      // After successful login, check if profile exists
+      const { data: profile, error: profileError } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("auth_id", user?.id)
+        .single();
+
+      // If no profile exists, create one
+      if (!profile && !profileError) {
+        const { error: createError } = await supabase
+          .from("user_profiles")
+          .insert([
+            {
+              auth_id: user?.id,
+              name: user?.user_metadata?.name || user?.email,
+              preferences: {},
+            },
+          ]);
+
+        if (createError) {
+          console.error("Error creating profile:", createError);
+        }
+      }
+
+      navigate("/");
       return { error: null };
     } catch (error) {
       return { error: error as Error };
@@ -124,6 +150,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await supabase.auth.signOut();
+    setUser(null);
+    setIsAuthenticated(false);
     navigate("/login");
   };
 

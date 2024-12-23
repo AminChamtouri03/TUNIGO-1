@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useUserInteractions } from "@/contexts/UserInteractionsContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { destinations } from "@/data/destinations";
 import { getWikipediaInfo } from "@/lib/wikipedia";
 
@@ -28,6 +29,7 @@ const DestinationDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toggleFavorite, isFavorite } = useFavorites();
+  const { isAuthenticated } = useAuth();
   const {
     addComment,
     removeComment,
@@ -79,15 +81,29 @@ const DestinationDetails = () => {
   const allComments = [...(destination.reviews || []), ...userComments];
 
   const handleAddComment = () => {
+    if (!isAuthenticated) {
+      requireAuth();
+      return;
+    }
+
     if (newComment.trim()) {
-      addComment(destination.id, newComment);
-      setNewComment("");
+      const success = addComment(destination.id, newComment);
+      if (success) {
+        setNewComment("");
+      }
     }
   };
 
   const handleRating = (rating: number) => {
-    addRating(destination.id, rating);
-    setHoveredRating(null);
+    if (!isAuthenticated) {
+      requireAuth();
+      return;
+    }
+
+    const success = addRating(destination.id, rating);
+    if (success) {
+      setHoveredRating(null);
+    }
   };
 
   const handleVisitNow = () => {
@@ -102,7 +118,10 @@ const DestinationDetails = () => {
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!requireAuth()) return;
+    if (!isAuthenticated) {
+      requireAuth();
+      return;
+    }
 
     const file = event.target.files?.[0];
     if (file) {
@@ -117,7 +136,10 @@ const DestinationDetails = () => {
   };
 
   const handleRemoveImage = (index: number) => {
-    if (!requireAuth()) return;
+    if (!isAuthenticated) {
+      requireAuth();
+      return;
+    }
 
     const userImageIndex = index - defaultImages.length;
     if (userImageIndex >= 0) {
@@ -142,7 +164,7 @@ const DestinationDetails = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white"
+            className="h-10 w-10 rounded-full bg-[#F5F5F5] hover:bg-[#F5F5F5]/90"
             onClick={() => navigate(-1)}
           >
             <ArrowLeft className="h-5 w-5 text-gray-700" />
@@ -150,11 +172,11 @@ const DestinationDetails = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white"
+            className="h-10 w-10 rounded-full bg-[#F5F5F5] hover:bg-[#F5F5F5]/90"
             onClick={() => toggleFavorite(destination.id)}
           >
             <Heart
-              className={`h-5 w-5 ${isFavorite(destination.id) ? "fill-[#FF2D55] text-[#FF2D55]" : "text-gray-700"}`}
+              className={`h-5 w-5 ${isFavorite(destination.id) ? "fill-red-500 text-red-500" : "text-gray-700"}`}
             />
           </Button>
         </div>
@@ -175,10 +197,14 @@ const DestinationDetails = () => {
 
       {/* Content */}
       <div className="p-4">
-        <h1 className="text-2xl font-bold mb-2">{destination.title}</h1>
-        <div className="flex items-center gap-2 text-gray-600 mb-4">
-          <MapPin className="h-4 w-4" />
-          <span className="text-sm">{destination.location}</span>
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">{destination.title}</h1>
+            <div className="flex items-center gap-2 text-gray-600">
+              <MapPin className="h-4 w-4" />
+              <span className="text-sm">{destination.location}</span>
+            </div>
+          </div>
         </div>
 
         {/* Visit Now Button */}
@@ -239,23 +265,13 @@ const DestinationDetails = () => {
         </TabsList>
 
         <TabsContent value="info" className="p-4 space-y-4">
+          <p className="text-gray-600 text-sm leading-relaxed">
+            {wikiInfo?.extract || destination.description}
+          </p>
           <div className="flex items-center gap-2 text-gray-600">
             <Clock className="h-4 w-4" />
             <span className="text-sm">{destination.openHours}</span>
           </div>
-          <p className="text-gray-600 text-sm leading-relaxed">
-            {wikiInfo?.extract || destination.description}
-          </p>
-          {wikiInfo?.url && (
-            <a
-              href={wikiInfo.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full text-center bg-[#00A9FF] text-white py-2 rounded-lg mt-4"
-            >
-              Read more on Wikipedia
-            </a>
-          )}
         </TabsContent>
 
         <TabsContent value="gallery" className="p-4">
@@ -312,7 +328,6 @@ const DestinationDetails = () => {
               placeholder="Add a comment..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
               className="flex-1"
             />
             <Button onClick={handleAddComment}>Post</Button>
